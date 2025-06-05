@@ -1,9 +1,30 @@
+---
+title: A Game of Traces
+menuTitle: A Game of Traces
+description: A grand strategy game with distributed tracing
+weight: 600
+killercoda:
+  title: A Game of Traces
+  description: A grand strategy game with distributed tracing
+  details:
+      intro:
+         foreground: docker-compose-update.sh
+  backend:
+    backend:
+    imageid: ubuntu
+---
+
+
+<!-- INTERACTIVE page intro.md START -->
 # War of Kingdoms: A Distributed Tracing Tutorial Game
+
+<!-- INTERACTIVE ignore START -->
 
 <div align="center">
 <img src="https://grafana.com/media/docs/alloy/game-of-tracing.jpeg" alt="Game of Tracing" width="200"/>
 </div>
 
+<!-- INTERACTIVE ignore END -->
 
 This educational game demonstrates distributed tracing concepts through an interactive strategy game built with OpenTelemetry and Grafana Alloy. Players learn about trace sampling, service graphs, and observability while competing for territory control.
 
@@ -58,6 +79,10 @@ The application consists of:
   - Loki for logs
   - Grafana for visualization
 
+<!-- INTERACTIVE page intro.md END -->
+
+<!-- INTERACTIVE page step1.md START -->
+
 ## Running the Demo
 
 1. Clone the repository:
@@ -77,10 +102,10 @@ The application consists of:
    ```
 
 4. Access the components:
-   - Game UI: http://localhost:8080
-   - Grafana: http://localhost:3000
-   - Prometheus: http://localhost:9090
-   - Alloy Debug: http://localhost:12345/debug/livedebugging
+   - Game UI: [http://localhost:8080](http://localhost:8080)
+   - Grafana: [http://localhost:3000](http://localhost:3000)
+   - Prometheus: [http://localhost:9090](http://localhost:9090)
+   - Alloy Debug: [http://localhost:12345/debug/livedebugging](http://localhost:12345/debug/livedebugging)
 
 5. Multiplayer Access:
    - The game supports multiple players simultaneously
@@ -95,6 +120,10 @@ The application consists of:
    - The AI will automatically control the faction not chosen by the player
    - The AI provides a balanced challenge with adaptive strategies
    - For two-player games, keep the AI toggle disabled
+
+<!-- INTERACTIVE page step1.md END -->
+
+<!-- INTERACTIVE page step2.md START -->
 
 ## Setting Up the Dashboard
 
@@ -122,6 +151,10 @@ The application consists of:
    - Service dependency mapping
    - Trace analytics for game events
 
+<!-- INTERACTIVE page step2.md END -->
+
+<!-- INTERACTIVE page step3.md START -->
+
 ## Learning Through Play
 
 ### 1. Trace Context Propagation
@@ -145,22 +178,26 @@ Learn how services interact:
 ## Observability Features
 
 ### 1. Resource Movement Tracing
-```traceql
+```console
 {span.resource.movement = true}
 ```
 Track resource transfers between locations with detailed timing and amounts.
 
 ### 2. Battle Analysis
-```traceql
+```console
 {span.battle.occurred = true}
 ```
 Analyze combat events, outcomes, and participating forces.
 
 ### 3. Player Actions
-```traceql
+```console
 {span.player.action = true}
 ```
 Monitor player interactions and their impact on the game state.
+
+<!-- INTERACTIVE page step3.md END -->
+
+<!-- INTERACTIVE page step4.md START -->
 
 ## Architecture Deep Dive
 
@@ -184,6 +221,10 @@ This project is designed for educational purposes to teach:
 - Real-time data flow
 - System instrumentation
 
+<!-- INTERACTIVE page step4.md END -->
+
+<!-- INTERACTIVE page finish.md START -->
+
 ## Contributing
 
 We welcome contributions! Please see our [contribution guidelines](CONTRIBUTING.md) for details.
@@ -201,3 +242,5 @@ This is an educational project focused on teaching distributed tracing concepts.
 - [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
 - [Grafana Alloy Documentation](https://grafana.com/docs/alloy/latest/)
 - [Distributed Tracing Guide](https://opentelemetry.io/docs/concepts/observability-primer/#distributed-traces) 
+
+<!-- INTERACTIVE page finish.md END -->
