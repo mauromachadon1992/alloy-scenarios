@@ -10,6 +10,14 @@
                 <h3 class="mb-0">Welcome to a Game of Traces</h3>
             </div>
             <div class="card-body">
+                <!-- Show reset status if coming from restart -->
+                {% if request.args.get('reset') %}
+                <div class="alert {% if request.args.get('reset') == 'success' %}alert-success{% else %}alert-danger{% endif %} mb-4">
+                    <i class="fas {% if request.args.get('reset') == 'success' %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                    {{ request.args.get('message', 'Game reset status unknown') }}
+                </div>
+                {% endif %}
+                
                 <h4 class="mb-4">Choose Your Faction</h4>
                 
                 {% if error %}
@@ -94,6 +102,21 @@
         <div class="text-center mt-4">
             <button id="reset-game-btn" class="btn btn-danger">Reset Game</button>
             <div id="reset-status" class="mt-2"></div>
+        </div>
+        
+        <!-- Replay Page Access -->
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-history me-2"></i>Game Replays
+                </h5>
+                <p class="card-text">
+                    Watch previous games unfold through distributed traces
+                </p>
+                <a href="/replay" class="btn btn-info">
+                    <i class="fas fa-play me-2"></i>View Game Replays
+                </a>
+            </div>
         </div>
     </div>
 </div>
