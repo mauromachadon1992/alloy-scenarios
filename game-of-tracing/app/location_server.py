@@ -443,72 +443,110 @@ class LocationServer:
         @self.app.route('/collect_resources', methods=['POST'])
         def collect_resources():
             """Collect resources from a location"""
-            can_collect, message, cooldown_seconds = self._can_collect_resources()
-            if not can_collect:
+            # Extract trace context from request headers
+            context = extract(request.headers)
+            
+            with self.tracer.start_as_current_span(
+                "collect_resources",
+                context=context,
+                kind=SpanKind.SERVER,
+                attributes={
+                    "location_name": self.location_info["name"],
+                    "location_type": self.location_info["type"]
+                }
+            ) as span:
+                can_collect, message, cooldown_seconds = self._can_collect_resources()
+                if not can_collect:
+                    span.set_status(trace.StatusCode.ERROR, message)
+                    span.set_attribute("cooldown_seconds", cooldown_seconds or 0)
+                    return jsonify({
+                        "success": False,
+                        "message": message,
+                        "cooldown": True,
+                        "cooldown_seconds": cooldown_seconds
+                    }), 200  # Return 200 for cooldown, as it's an expected state
+                
+                location_type = self.location_info["type"]
+                resources_gained = RESOURCE_GENERATION[location_type]
+                
+                location_state = self._get_location_state(self.location_id)
+                new_resources = location_state["resources"] + resources_gained
+                self._update_location_state(self.location_id, resources=new_resources)
+                
+                span.set_attribute("resources_gained", resources_gained)
+                span.set_attribute("new_resources_total", new_resources)
+                
+                with self.lock:
+                    self.last_resource_collection[self.location_id] = datetime.now()
+                
+                # Force metric collection after resource update
+                self.telemetry.collect_metrics()
+                
                 return jsonify({
-                    "success": False,
-                    "message": message,
-                    "cooldown": True,
-                    "cooldown_seconds": cooldown_seconds
-                }), 200  # Return 200 for cooldown, as it's an expected state
-            
-            location_type = self.location_info["type"]
-            resources_gained = RESOURCE_GENERATION[location_type]
-            
-            location_state = self._get_location_state(self.location_id)
-            new_resources = location_state["resources"] + resources_gained
-            self._update_location_state(self.location_id, resources=new_resources)
-            
-            with self.lock:
-                self.last_resource_collection[self.location_id] = datetime.now()
-            
-            # Force metric collection after resource update
-            self.telemetry.collect_metrics()
-            
-            return jsonify({
-                "success": True,
-                "message": f"Collected {resources_gained} resources",
-                "current_resources": new_resources,
-                "cooldown": False
-            })
+                    "success": True,
+                    "message": f"Collected {resources_gained} resources",
+                    "current_resources": new_resources,
+                    "cooldown": False
+                })
         
         @self.app.route('/create_army', methods=['POST'])
         def create_army():
-            if self.location_info["type"] != "capital":
+            # Extract trace context from request headers
+            context = extract(request.headers)
+            
+            with self.tracer.start_as_current_span(
+                "create_army",
+                context=context,
+                kind=SpanKind.SERVER,
+                attributes={
+                    "location_name": self.location_info["name"],
+                    "location_type": self.location_info["type"]
+                }
+            ) as span:
+                if self.location_info["type"] != "capital":
+                    span.set_status(trace.StatusCode.ERROR, "Only capitals can create armies")
+                    return jsonify({
+                        "success": False,
+                        "message": "Only capitals can create armies"
+                    }), 403
+                
+                location_state = self._get_location_state(self.location_id)
+                current_resources = location_state["resources"]
+                current_army = location_state["army"]
+                cost = COSTS["create_army"]
+                
+                span.set_attribute("current_resources", current_resources)
+                span.set_attribute("current_army", current_army)
+                span.set_attribute("army_cost", cost)
+                
+                if current_resources < cost:
+                    span.set_status(trace.StatusCode.ERROR, "Insufficient resources")
+                    return jsonify({
+                        "success": False,
+                        "message": f"Not enough resources. Need {cost}, have {current_resources}"
+                    }), 400
+                
+                new_resources = current_resources - cost
+                new_army = current_army + 1
+                
+                self._update_location_state(
+                    self.location_id,
+                    resources=new_resources,
+                    army=new_army
+                )
+                
+                span.set_attribute("new_resources", new_resources)
+                span.set_attribute("new_army", new_army)
+                
+                # Force metric collection after army creation
+                self.telemetry.collect_metrics()
+                
                 return jsonify({
-                    "success": False,
-                    "message": "Only capitals can create armies"
-                }), 403
-            
-            location_state = self._get_location_state(self.location_id)
-            current_resources = location_state["resources"]
-            current_army = location_state["army"]
-            cost = COSTS["create_army"]
-            
-            if current_resources < cost:
-                return jsonify({
-                    "success": False,
-                    "message": f"Not enough resources. Need {cost}, have {current_resources}"
-                }), 400
-            
-            new_resources = current_resources - cost
-            new_army = current_army + 1
-            
-            self._update_location_state(
-                self.location_id,
-                resources=new_resources,
-                army=new_army
-            )
-            
-            # Force metric collection after army creation
-            self.telemetry.collect_metrics()
-            
-            return jsonify({
-                "success": True,
-                "message": "Army created",
-                "current_army": new_army,
-                "current_resources": new_resources
-            })
+                    "success": True,
+                    "message": "Army created",
+                    "current_army": new_army,
+                    "current_resources": new_resources
+                })
         
         @self.app.route('/move_army', methods=['POST'])
         def move_army():
