@@ -408,6 +408,47 @@ stage.match {
   }
 }
 
+// ## C++ Processing ##
+// Let only cpp logs pass through this stage. This is done via the label match on the service_name label.
+stage.match {
+  pipeline_name = "cpp"
+  selector = "{service_name=\"cpp\"}"
+
+  stage.regex {
+    expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) \\[(?P<level>[^\\]]+)\\] \\[(?P<logger>[^\\]]+)\\] \\[(?P<thread>[^\\]]+)\\] \\[(?P<file>[^:]+):(?P<line_num>\\d+) (?P<function>[^\\]]+)\\] - (?P<msg>.*)"
+  }
+
+  stage.labels {
+    values = {
+      logger = "",
+      level = "",
+      file = "",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02 15:04:05.000"
+  }
+
+  stage.structured_metadata {
+    values = {
+      thread = "",
+      line_num = "",
+      function = "",
+    }
+  }
+
+  stage.template {
+    source = "output"
+    template = "{{.file}}:{{.line_num}} {{.function}} - {{.level}} - {{.msg}}"
+  }
+
+  stage.output {
+    source = "output"
+  }
+}
+
   forward_to = [loki.write.local.receiver]
 }
 
