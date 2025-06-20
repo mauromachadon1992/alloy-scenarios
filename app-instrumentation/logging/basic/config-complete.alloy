@@ -243,8 +243,7 @@ stage.match {
       source = "output"
     }
   }
-  forward_to = [loki.write.local.receiver]
-}
+
 
 // ## Java Processing ##
 // Let only java logs pass through this stage. This is done via the label match on the service_name label.
@@ -253,13 +252,165 @@ stage.match {
     pipeline_name = "java"
     selector = "{service_name=\"java\"}"
     
-    stage.multiline {
-    firstline = "^\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\s+\\[[^\\]]+\\]\\s+[A-Z]+\\s+\\w+\\s+-\\s+"
+  stage.multiline {
+    firstline = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+\\d{4}\\[[^\\]]+\\]\\s+[A-Z]+\\s+\\w+\\s+-\\s+"
   }
+
+
   stage.regex {
-
-
+    expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\+\\d{4})\\[(?P<thread>[^\\]]+)\\] (?P<level>[A-Z]+)\\s+(?P<logger>[^ ]+) - (?P<msg>[^\n]*)(?:\\n(?P<stacktrace>.*))?"
   }
+
+        // Set the file and level as labels.
+  stage.labels {
+      values = {
+        logger = "",
+        level = "",
+        }
+    }
+
+    // Set the timestamp to the timestamp extracted from the log line.
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000-0700"
+    }
+
+    // Set the line number as structured metadata in loki (non-indexed)
+  stage.structured_metadata {
+    values = {
+      thread = "",
+      stacktrace = "",
+    }
+    }
+
+  stage.template {
+      source   = "output"
+      template = "{{.logger}} - {{.level}} - {{.msg}}"
+    }
+
+   stage.output {
+      source = "output"
+    }    
+  }
+
+// ## C# Processing ##
+// Let only c# logs pass through this stage. This is done via the label match on the service_name label.
+
+stage.match {
+  pipeline_name = "csharp"
+  selector = "{service_name=\"csharp\"}"
+
+  stage.multiline {
+    firstline = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3} [a-z]+: [^\\[]+\\[\\d+\\]"
+  }
+
+  stage.regex {
+    expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (?P<level>[a-z]+): (?P<logger>[^\\[]+)\\[(?P<event_id>\\d+)\\]\\n\\s+(?P<msg>.*)"
+  }
+
+  stage.labels {
+    values = {
+      logger = "",
+      level = "",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02 15:04:05.000"
+  }
+
+  stage.structured_metadata {
+    values = {
+      event_id = "",
+    }
+  }
+
+  stage.template {
+    source = "output"
+    template = "{{.logger}} - {{.level}} - {{.msg}}"
+  }
+
+  stage.output {
+    source = "output"
+  }
+}
+
+
+// ## PHP Processing ##
+// Let only php logs pass through this stage. This is done via the label match on the service_name label.
+stage.match {
+  pipeline_name = "php"
+  selector = "{service_name=\"php\"}"
+
+  stage.regex {
+    expression = "^\\[(?P<timestamp>[^\\]]+)\\] (?P<logger>[^.]+)\\.(?P<level>[A-Z]+): (?P<msg>.*?) (?P<context_json>\\[\\]|\\{.*?\\}) (?P<extra_json>\\{.*?\\})$"
+  }
+
+  stage.labels {
+    values = {
+      logger = "",
+      level = "",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02T15:04:05.000000-07:00"
+  }
+
+  stage.json {
+    source = "context_json"
+    expressions = {
+      counter            = "counter",
+      obj                = "obj",
+      query              = "query",
+      duration           = "duration",
+      method             = "method",
+      path               = "path",
+      status             = "status",
+      exception          = "exception",
+      error_code         = "error_code",
+      affected_service   = "affected_service",
+    }
+  }
+  
+  stage.json {
+    source = "extra_json"
+    expressions = {
+      environment        = "environment",
+    }
+  }
+
+  stage.structured_metadata {
+    values = {
+      counter          = "",
+      obj              = "",
+      query            = "",
+      duration         = "",
+      method           = "",
+      path             = "",
+      status           = "",
+      exception        = "",
+      error_code       = "",
+      affected_service = "",
+      environment      = "",
+    }
+  }
+
+  stage.template {
+    source = "output"
+    template = "{{.logger}} - {{.level}} - {{.msg}}"
+  }
+
+  stage.output {
+    source = "output"
+  }
+}
+
+  forward_to = [loki.write.local.receiver]
+}
+
 
 loki.write "local" {
   endpoint {
