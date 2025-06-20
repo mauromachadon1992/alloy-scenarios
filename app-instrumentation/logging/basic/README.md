@@ -1,4 +1,4 @@
-# App Instrumentation - Basic Logging Examples
+# App Instrumentation - Basic Logging Examples (NOT FINISHED)
 
 This directory contains basic logging examples for 7 popular programming languages, each using built-in or industry-standard logging approaches without external dependencies.
 

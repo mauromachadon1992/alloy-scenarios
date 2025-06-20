@@ -6,7 +6,7 @@ import time
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format= '%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
     ]

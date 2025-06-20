@@ -1,0 +1,268 @@
+
+// ###############################
+// #### Logging Configuration ####
+// ###############################
+
+// Discover Docker containers and extract metadata.
+discovery.docker "linux" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Define a relabeling rule to create a service name from the container name.
+discovery.relabel "logs_integrations_docker" {
+      targets = []
+  
+      rule {
+          source_labels = ["__meta_docker_container_name"]
+          regex = "/(.*)"
+          target_label = "service_name"
+      }
+
+  }
+
+
+// Configure a loki.source.docker component to collect logs from Docker containers.
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.linux.targets
+  labels     = {"platform" = "docker"}
+  relabel_rules = discovery.relabel.logs_integrations_docker.rules
+  forward_to = [loki.process.clients.receiver]
+}
+
+// Client processing stage
+loki.process "clients" {
+
+  // ## Python Processing ##
+  // Let only python logs pass through this stage. This is done via the label match on the service_name label.
+
+stage.match {
+    pipeline_name = "python"
+    selector = "{service_name=\"python\"}"
+    
+    // Extract the timestamp, file, line number, level, and message from the log line.
+    stage.regex {
+      expression = "^(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}) - (?P<file>[^:]+):(?P<line_num>\\d+) - (?P<level>[^ ]+) - (?P<msg>.*)"
+    }
+    
+    // Set the file and level as labels.
+    stage.labels {
+      values = {
+        file = "",
+        level = "",
+        }
+    }
+
+    // Set the timestamp to the timestamp extracted from the log line.
+    stage.timestamp {
+    source = "time"
+    format = "2025-06-17 09:54:15,283"
+    }
+
+    // Set the line number as structured metadata in loki (non-indexed)
+    stage.structured_metadata {
+    values = {
+      line_num = "",
+    }
+    }
+
+    // We want to maintain a simuler format to the orginal log line so we use template to create a new
+    // temporary variable called output.
+    stage.template {
+      source = "output"
+      template = "{{.file}} - {{.line_num}} - {{.level}} - {{.msg}}"
+    }
+
+    // We use the new output variable to create a new log body. This is the log line that will be sent to loki.
+    stage.output {
+      source = "output"
+    }
+}
+
+// ## Node.js Processing ##
+// Let only node.js logs pass through this stage. This is done via the label match on the service_name label.
+
+
+stage.match {
+    pipeline_name = "javascript"
+    selector = "{service_name=\"javascript\"}"
+    
+    // Extract the timestamp, file, line number, level, and message from the log line.
+    stage.json {
+    expressions = {
+      level_num      = "level",
+      time       = "time",
+      pid        = "pid",
+      hostname   = "hostname",
+      msg        = "msg",
+      obj        = "obj",
+      counter    = "counter",
+      component  = "component",
+      query      = "query",
+      duration   = "duration",
+      version    = "version",
+      method     = "method",
+      path       = "path",
+      status     = "status",
+      nested_obj        = "nested.obj",
+      nested_timestamp  = "nested.timestamp",
+      err_type          = "err.type",
+      err_message       = "err.message",
+      err_stack         = "err.stack",
+    }
+    }
+
+    stage.template {
+      source   = "level"
+      template = "{{- if eq .level_num \"10\" -}}trace{{- else if eq .level_num \"20\" -}}debug{{- else if eq .level_num \"30\" -}}info{{- else if eq .level_num \"40\" -}}warn{{- else if eq .level_num \"50\" -}}error{{- else if eq .level_num \"60\" -}}fatal{{- else -}}unknown{{- end -}}"
+    }
+    // Set the file and level as labels.
+    stage.labels {
+      values = {
+        file = "",
+        hostname = "",
+        component = "",
+        level = "",
+        }
+    }
+
+      // Set the timestamp to the timestamp extracted from the log line.
+      stage.timestamp {
+      source = "time"
+      format = "UnixMs"
+      }
+
+      // Set the line number as structured metadata in loki (non-indexed)
+      stage.structured_metadata {
+      values = {
+        level_num  = "",
+        pid        = "",
+        query      = "",
+        duration   = "",
+        version    = "",
+        method     = "",
+        path       = "",
+        status     = "",
+        nested_obj = "",
+        nested_timestamp = "",
+        err_type   = "",
+        err_message = "",
+        err_stack  = "",
+      }
+  }
+      // We want to maintain a simuler format to the orginal log line so we use template to create a new
+      // temporary variable called output.
+    stage.template {
+        source   = "output"
+        template = "{{.hostname}} - {{.level}} - {{ if .err_message }}{{ .err_message }}{{ else }}{{ .msg }}{{ end }}"
+      }
+      // We use the new output variable to create a new log body. This is the log line that will be sent to loki.
+    stage.output {
+        source = "output"
+      }
+}
+
+
+// ## Go Processing ##
+// Let only go logs pass through this stage. This is done via the label match on the service_name label.
+
+stage.match {
+    pipeline_name = "go"
+    selector = "{service_name=\"go\"}"
+    
+    // Extract the timestamp, file, line number, level, and message from the log line.
+  stage.json {
+    expressions = {
+      level            = "level",
+      ts               = "ts",
+      logger           = "logger",
+      caller           = "caller",
+      msg              = "msg",
+      answer           = "answer",
+      obj              = "obj",
+      counter          = "counter",
+      feature          = "feature",
+      query            = "query",
+      duration         = "duration",
+      method           = "method",
+      path             = "path",
+      status           = "status",
+      requestId        = "requestId",
+      context1         = "context1",
+      context2         = "context2",
+      error            = "error",
+      stacktrace       = "stacktrace",
+      nested_obj       = "nested.obj",
+      nested_timestamp = "nested.timestamp",
+    }
+  }
+    stage.labels {
+      values = {
+        logger = "",
+        level = "",
+        }
+    }
+
+    // Set the timestamp to the timestamp extracted from the log line.
+    stage.timestamp {
+    source = "ts"
+    format = "1750342991.0445938"
+    }
+
+    // Set the line number as structured metadata in loki (non-indexed)
+    stage.structured_metadata {
+    values = {
+      caller           = "caller",
+      answer           = "answer",
+      obj              = "obj",
+      counter          = "counter",
+      feature          = "feature",
+      query            = "query",
+      duration         = "duration",
+      method           = "method",
+      path             = "path",
+      status           = "status",
+      requestId        = "requestId",
+      context1         = "context1",
+      context2         = "context2",
+      error            = "error",
+      stacktrace       = "stacktrace",
+      nested_obj       = "nested.obj",
+      nested_timestamp = "nested.timestamp",
+    }
+    }
+
+    // We want to maintain a simuler format to the orginal log line so we use template to create a new
+    // temporary variable called output.
+    stage.template {
+      source   = "output"
+      template = "{{.logger}} - {{.level}} - {{.msg}}"
+    }
+    // We use the new output variable to create a new log body. This is the log line that will be sent to loki.
+    stage.output {
+      source = "output"
+    }
+  }
+  forward_to = [loki.write.local.receiver]
+}
+
+// ## Java Processing ##
+// Let only java logs pass through this stage. This is done via the label match on the service_name label.
+
+stage.match {
+    pipeline_name = "java"
+    selector = "{service_name=\"java\"}"
+    
+    stage.multiline {
+    firstline = "^\\d{2}:\\d{2}:\\d{2}\\.\\d{3}\\s+\\[[^\\]]+\\]\\s+[A-Z]+\\s+\\w+\\s+-\\s+"
+  }
+  stage.regex {
+
+
+  }
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
