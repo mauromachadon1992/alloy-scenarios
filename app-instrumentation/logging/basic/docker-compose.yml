@@ -110,7 +110,7 @@ services:
      - 4317:4317
      - 4318:4318
    volumes:
-     - ./config-complete.alloy:/etc/alloy/config.alloy
+     - ./alloy/:/etc/alloy/
      - /var/run/docker.sock:/var/run/docker.sock
    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
 

@@ -1,0 +1,71 @@
+// PHP/Monolog log parser module
+declare "php" {
+  stage.match {
+    pipeline_name = "php"
+    selector = "{service_name=\"php\"}"
+
+    stage.regex {
+      expression = "^\\[(?P<timestamp>[^\\]]+)\\] (?P<logger>[^.]+)\\.(?P<level>[A-Z]+): (?P<msg>.*?) (?P<context_json>\\[\\]|\\{.*?\\}) (?P<extra_json>\\{.*?\\})$"
+    }
+
+    stage.labels {
+      values = {
+        logger = "",
+        level = "",
+      }
+    }
+
+    stage.timestamp {
+      source = "timestamp"
+      format = "2006-01-02T15:04:05.000000-07:00"
+    }
+
+    stage.json {
+      source = "context_json"
+      expressions = {
+        counter            = "counter",
+        obj                = "obj",
+        query              = "query",
+        duration           = "duration",
+        method             = "method",
+        path               = "path",
+        status             = "status",
+        exception          = "exception",
+        error_code         = "error_code",
+        affected_service   = "affected_service",
+      }
+    }
+    
+    stage.json {
+      source = "extra_json"
+      expressions = {
+        environment        = "environment",
+      }
+    }
+    
+    stage.structured_metadata {
+      values = {
+        counter          = "",
+        obj              = "",
+        query            = "",
+        duration         = "",
+        method           = "",
+        path             = "",
+        status           = "",
+        exception        = "",
+        error_code       = "",
+        affected_service = "",
+        environment      = "",
+      }
+    }
+
+    stage.template {
+      source = "output"
+      template = "{{.logger}} - {{.level}} - {{.msg}}"
+    }
+
+    stage.output {
+      source = "output"
+    }
+  }
+} 

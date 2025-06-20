@@ -1,7 +1,11 @@
+// ###############################
+// #### Main Logging Configuration ####
+// ###############################
 
-// ###############################
-// #### Logging Configuration ####
-// ###############################
+// Import language-specific parsers
+import.file "parsers" {
+  filename = "/etc/alloy/parsers/"
+}
 
 // Discover Docker containers and extract metadata.
 discovery.docker "linux" {
@@ -17,9 +21,7 @@ discovery.relabel "logs_integrations_docker" {
           regex = "/(.*)"
           target_label = "service_name"
       }
-
-  }
-
+}
 
 // Configure a loki.source.docker component to collect logs from Docker containers.
 loki.source.docker "default" {
@@ -27,12 +29,25 @@ loki.source.docker "default" {
   targets    = discovery.docker.linux.targets
   labels     = {"platform" = "docker"}
   relabel_rules = discovery.relabel.logs_integrations_docker.rules
-  forward_to = [loki.write.local.receiver]
+  forward_to = [loki.process.clients.receiver]
 }
 
+// Client processing stage with imported parsers
+loki.process "clients" {
+  // Use imported language parsers
+  parsers.python "default" {}
+  parsers.javascript "default" {}
+  parsers.go "default" {}
+  parsers.java "default" {}
+  parsers.csharp "default" {}
+  parsers.php "default" {}
+  parsers.cpp "default" {}
+
+  forward_to = [loki.write.local.receiver]
+}
 
 loki.write "local" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
   }
-}
+} 
