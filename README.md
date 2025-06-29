@@ -31,6 +31,8 @@ The centralized approach allows you to manage all Docker image versions in a sin
 | [OpenTelemetry Tail sampling](otel-tail-sampling/) | Learn how to use OpenTelemetry tail sampling with Grafana Alloy and Tempo. |
 | [Trace Deliverty](trace-delivery/) | A fun scenerio where the concepts of traces are taught through the supply chain of sofa creaton |
 | [Game of Tracing](game-of-tracing/) | Learn traces through a strategic game |
+| [Kafka](kafka/) | Learn how to use Grafana Alloy to monitor logs from Kafka. |
+| [Popular Logging Frameworks](app-instrumentation/logging/popular-logging-frameworks/) | Learn how to use Grafana Alloy to parse logs from popular logging frameworks. |
 
 ## Contributing
 
