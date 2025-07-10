@@ -27,19 +27,16 @@ loki.write "local" {
 discovery.relabel "syslog" {
     targets = []
     
-    # Mapear hostname para label host
     rule {
         source_labels = ["__syslog_message_hostname"]
         target_label = "host"
     }
     
-    # Mapear application name
     rule {
         source_labels = ["__syslog_message_app_name"]
         target_label = "application"
     }
     
-    # Identificar tipo de dispositivo baseado no hostname/IP
     rule {
         source_labels = ["__syslog_message_hostname"]
         regex = ".*olt.*|.*OLT.*"
@@ -61,7 +58,6 @@ discovery.relabel "syslog" {
         replacement = "mikrotik"
     }
     
-    # Mapear facility e severity
     rule {
         source_labels = ["__syslog_message_facility"]
         target_label = "facility"
