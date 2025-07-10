@@ -16,6 +16,13 @@ loki.source.syslog "local" {
     labels   = { component = "loki.source.syslog", protocol = "udp"}
   }
 
+  relabel_rules = [
+    {
+      source_labels = ["__syslog_message_sd_custom_99770_appname"]
+      target_label = "appname"
+    }
+  ]
+
   forward_to = [loki.write.local.receiver]
 }
 
