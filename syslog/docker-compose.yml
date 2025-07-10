@@ -14,7 +14,7 @@ services:
       - alloy
       
   alloy:
-    image: grafana/alloy:latest
+    image: grafana/alloy:${GRAFANA_ALLOY_VERSION:-v1.8.2}
     ports:
       - 12345:12345
       - 51893:51893
@@ -27,7 +27,7 @@ services:
       - loki
 
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:${GRAFANA_LOKI_VERSION:-3.5.0}
     ports:
       - "3100:3100"
     volumes:
