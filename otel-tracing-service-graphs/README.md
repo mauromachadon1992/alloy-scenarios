@@ -23,7 +23,7 @@ The example includes:
 
 2. Navigate to this example directory:
    ```
-   cd alloy-service-graphs
+   cd otel-tracing-service-graphs
    ```
 
 3. Run using Docker Compose:
@@ -34,7 +34,7 @@ The example includes:
    Or use the centralized image management:
    ```
    cd ..
-   ./run-example.sh alloy-service-graphs
+   ./run-example.sh otel-tracing-service-graphs
    ```
 
 4. Access the demo application at http://localhost:8080
