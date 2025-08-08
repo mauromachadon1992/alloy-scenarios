@@ -13,11 +13,11 @@ services:
       - alloy
       
   alloy:
-    image: grafana/alloy:${GRAFANA_ALLOY_VERSION:-v1.10.0}
+    image: grafana/alloy:latest
     ports:
-      - 12345:12345
-      - 51893:51893
-      - 51898:51898
+      - "12345:12345"
+      - "51893:51893"
+      - "51898:51898"
     volumes:
       - ./config.alloy:/etc/alloy/config.alloy
       - ./logs:/tmp/app-logs/
@@ -26,7 +26,7 @@ services:
       - loki
 
   loki:
-    image: grafana/loki:${GRAFANA_LOKI_VERSION:-3.5.2}
+    image: grafana/loki:latest
     ports:
       - "3100:3100"
     volumes:
