@@ -4,15 +4,26 @@
 
 // Host Cadvisor on the Docker socket to expose container metrics.
 prometheus.exporter.cadvisor "example" {
-  docker_host = "unix:///var/run/docker.sock"
-
-  storage_duration = "5m"
+  docker_only = true
 }
 
+discovery.relabel "example" {
+    targets = prometheus.exporter.cadvisor.example.targets
+
+    rule {
+        target_label = "job"
+        replacement  = "integrations/docker"
+    }
+
+    rule {
+        target_label = "instance"
+        replacement  = constants.hostname
+    }
+}
 
 // Configure a prometheus.scrape component to collect cadvisor metrics.
 prometheus.scrape "scraper" {
-  targets    = prometheus.exporter.cadvisor.example.targets
+  targets    = discovery.relabel.example.output
   forward_to = [ prometheus.remote_write.demo.receiver ]
 
 
@@ -42,8 +53,13 @@ discovery.relabel "logs_integrations_docker" {
       rule {
           source_labels = ["__meta_docker_container_name"]
           regex = "/(.*)"
-          target_label = "service_name"
+          target_label = "container_name"
       }
+
+     rule {
+        target_label = "instance"
+        replacement  = constants.hostname
+    }
 
   }
 
@@ -52,7 +68,6 @@ discovery.relabel "logs_integrations_docker" {
 loki.source.docker "default" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.docker.linux.targets
-  labels     = {"platform" = "docker"}
   relabel_rules = discovery.relabel.logs_integrations_docker.rules
   forward_to = [loki.write.local.receiver]
 }
