@@ -3,19 +3,50 @@ livedebugging {
 }
 
 loki.source.syslog "local" {
+  # Listener TCP dedicado RFC5424
   listener {
-    address  = "0.0.0.0:51893"
-    labels   = { component = "loki.source.syslog", protocol = "tcp" }
+    address               = "0.0.0.0:51893"
+    protocol              = "tcp"
+    syslog_format         = "rfc5424"
+    label_structured_data = true
+    idle_timeout          = "120s"
+    max_message_length    = 8192
+    labels = {
+      component = "loki.source.syslog"
+      protocol  = "tcp"
+    }
+    # tls_config opcional em redes não confiáveis:
+    # tls_config {
+    #   cert_file = "/etc/alloy/tls/server.crt"
+    #   key_file  = "/etc/alloy/tls/server.key"
+    # }
   }
 
+  # Listener UDP para legados (RFC3164 comum em dispositivos antigos)
   listener {
-    address  = "0.0.0.0:51898"
-    protocol = "udp"
-    labels   = { component = "loki.source.syslog", protocol = "udp"}
+    address               = "0.0.0.0:51898"
+    protocol              = "udp"
+    syslog_format         = "rfc3164"
+    label_structured_data = true
+    max_message_length    = 8192
+    labels = {
+      component = "loki.source.syslog"
+      protocol  = "udp"
+    }
+    # Opcional: rfc3164_default_to_current_year = true
   }
 
-  forward_to = [loki.write.local.receiver]
-  relabel_rules = discovery.relabel.syslog.rules
+  forward_to    = [loki.write.local.receiver]
+  # Primeiro: reter todos __syslog_* com labelmap; depois aplicar suas regras atuais
+  relabel_rules = loki.relabel.syslog_all.rules + discovery.relabel.syslog.rules
+}
+
+# Relabel auxiliar para reter todos os labels __syslog_* antes de repassar
+loki.relabel "syslog_all" {
+  rule {
+    action = "labelmap"
+    regex  = "__syslog_(.+)"
+  }
 }
 
 loki.write "local" {
@@ -24,48 +55,49 @@ loki.write "local" {
   }
 }
 
+# Suas regras atuais (mantidas), mapeando campos de interesse
 discovery.relabel "syslog" {
-    targets = []
-    
-    rule {
-        source_labels = ["__syslog_message_hostname"]
-        target_label = "host"
-    }
-    
-    rule {
-        source_labels = ["__syslog_message_app_name"]
-        target_label = "application"
-    }
-    
-    rule {
-        source_labels = ["__syslog_message_hostname"]
-        regex = ".*olt.*|.*OLT.*"
-        target_label = "device_type"
-        replacement = "olt"
-    }
-    
-    rule {
-        source_labels = ["__syslog_message_hostname"]
-        regex = ".*switch.*|.*datacom.*|.*SWITCH.*"
-        target_label = "device_type"
-        replacement = "switch"
-    }
-    
-    rule {
-        source_labels = ["__syslog_message_hostname"]
-        regex = ".*mikrotik.*|.*routeros.*|.*MIKROTIK.*"
-        target_label = "device_type"
-        replacement = "mikrotik"
-    }
-    
-    rule {
-        source_labels = ["__syslog_message_facility"]
-        target_label = "facility"
-    }
-    
-    rule {
-        source_labels = ["__syslog_message_severity"]
-        target_label = "severity"
-    }
+  targets = []
+
+  rule {
+    source_labels = ["__syslog_message_hostname"]
+    target_label  = "host"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_app_name"]
+    target_label  = "application"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_hostname"]
+    regex         = ".*olt.*|.*OLT.*"
+    target_label  = "device_type"
+    replacement   = "olt"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_hostname"]
+    regex         = ".*switch.*|.*datacom.*|.*SWITCH.*"
+    target_label  = "device_type"
+    replacement   = "switch"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_hostname"]
+    regex         = ".*mikrotik.*|.*routeros.*|.*MIKROTIK.*"
+    target_label  = "device_type"
+    replacement   = "mikrotik"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_facility"]
+    target_label  = "facility"
+  }
+
+  rule {
+    source_labels = ["__syslog_message_severity"]
+    target_label  = "severity"
+  }
 }
 
