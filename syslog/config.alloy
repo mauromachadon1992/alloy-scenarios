@@ -1,5 +1,3 @@
-
-
 livedebugging {
   enabled = true
 }
@@ -17,6 +15,7 @@ loki.source.syslog "local" {
   }
 
   forward_to = [loki.write.local.receiver]
+  relabel_rules = discovery.relabel.syslog.rules
 }
 
 loki.write "local" {
@@ -24,3 +23,49 @@ loki.write "local" {
     url = "http://loki:3100/loki/api/v1/push"
   }
 }
+
+discovery.relabel "syslog" {
+    targets = []
+    
+    rule {
+        source_labels = ["__syslog_message_hostname"]
+        target_label = "host"
+    }
+    
+    rule {
+        source_labels = ["__syslog_message_app_name"]
+        target_label = "application"
+    }
+    
+    rule {
+        source_labels = ["__syslog_message_hostname"]
+        regex = ".*olt.*|.*OLT.*"
+        target_label = "device_type"
+        replacement = "olt"
+    }
+    
+    rule {
+        source_labels = ["__syslog_message_hostname"]
+        regex = ".*switch.*|.*datacom.*|.*SWITCH.*"
+        target_label = "device_type"
+        replacement = "switch"
+    }
+    
+    rule {
+        source_labels = ["__syslog_message_hostname"]
+        regex = ".*mikrotik.*|.*routeros.*|.*MIKROTIK.*"
+        target_label = "device_type"
+        replacement = "mikrotik"
+    }
+    
+    rule {
+        source_labels = ["__syslog_message_facility"]
+        target_label = "facility"
+    }
+    
+    rule {
+        source_labels = ["__syslog_message_severity"]
+        target_label = "severity"
+    }
+}
+
