@@ -3,7 +3,7 @@ livedebugging {
 }
 
 loki.source.syslog "local" {
-  # Listener TCP dedicado RFC5424
+
   listener {
     address               = "0.0.0.0:51893"
     protocol              = "tcp"
@@ -22,7 +22,6 @@ loki.source.syslog "local" {
     # }
   }
 
-  # Listener UDP para legados (RFC3164 comum em dispositivos antigos)
   listener {
     address               = "0.0.0.0:51898"
     protocol              = "udp"
@@ -37,11 +36,10 @@ loki.source.syslog "local" {
   }
 
   forward_to    = [loki.write.local.receiver]
-  # Primeiro: reter todos __syslog_* com labelmap; depois aplicar suas regras atuais
+
   relabel_rules = loki.relabel.syslog_all.rules + discovery.relabel.syslog.rules
 }
 
-# Relabel auxiliar para reter todos os labels __syslog_* antes de repassar
 loki.relabel "syslog_all" {
   rule {
     action = "labelmap"
@@ -55,7 +53,6 @@ loki.write "local" {
   }
 }
 
-# Suas regras atuais (mantidas), mapeando campos de interesse
 discovery.relabel "syslog" {
   targets = []
 
