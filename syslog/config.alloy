@@ -9,10 +9,10 @@ loki.source.syslog "local" {
     syslog_format         = "rfc5424"
     label_structured_data = true
     idle_timeout          = "120s"
-    max_message_length    = 8192
+    max_message_length    = 16384
     labels = {
-      component = "loki.source.syslog"
-      protocol  = "tcp"
+      component = "loki.source.syslog",
+      protocol  = "tcp",
     }
   }
   
@@ -21,10 +21,10 @@ loki.source.syslog "local" {
     protocol              = "udp"
     syslog_format         = "rfc3164"
     label_structured_data = true
-    max_message_length    = 8192
+    max_message_length    = 16384
     labels = {
-      component = "loki.source.syslog"
-      protocol  = "udp"
+      component = "loki.source.syslog",
+      protocol  = "udp",
     }
   }
   
