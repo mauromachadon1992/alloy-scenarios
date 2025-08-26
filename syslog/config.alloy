@@ -1,41 +1,40 @@
+// Debugging habilitado (opcional para troubleshooting)
 livedebugging {
   enabled = true
 }
 
+// Componente loki.source.syslog corrigido
 loki.source.syslog "local" {
   listener {
-    address               = "0.0.0.0:51893"
-    protocol              = "tcp"
-    syslog_format         = "rfc5424"
-    label_structured_data = true
-    idle_timeout          = "120s"
-    max_message_length    = 16384
-    labels = {
-      component = "loki.source.syslog",
-      protocol  = "tcp",
-    }
-  }
-  
-  listener {
-    address               = "0.0.0.0:51898"
+    address               = "0.0.0.0:5514"
     protocol              = "udp"
-    syslog_format         = "rfc3164"
+    max_message_length    = 65536
     label_structured_data = true
-    max_message_length    = 16384
-    labels = {
-      component = "loki.source.syslog",
-      protocol  = "udp",
+    labels = { 
+      component = "loki.source.syslog", 
+      protocol = "udp" 
     }
   }
   
-  forward_to    = [loki.write.local.receiver]
-  relabel_rules = loki.relabel.syslog_all.rules
+  // Listener TCP adicional (opcional)
+  listener {
+    address  = "0.0.0.0:5515"
+    protocol = "tcp"
+    labels = { 
+      component = "loki.source.syslog", 
+      protocol = "tcp" 
+    }
+  }
+
+  // OBRIGATÓRIO: forward_to especifica para onde enviar os logs
+  forward_to = [loki.relabel.syslog_all.receiver]
 }
 
+// Componente loki.relabel corrigido com forward_to
 loki.relabel "syslog_all" {
-
-  forward_to = [loki.write.default.receiver]
-
+  // OBRIGATÓRIO: definir destino dos logs processados
+  forward_to = [loki.write.local.receiver]
+  
   rule {
     action = "labelmap"
     regex  = "__syslog_(.+)"
@@ -83,6 +82,7 @@ loki.relabel "syslog_all" {
   }
 }
 
+// Componente loki.write para destino final
 loki.write "local" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
