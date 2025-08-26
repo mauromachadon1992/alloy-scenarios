@@ -3,7 +3,6 @@ livedebugging {
 }
 
 loki.source.syslog "local" {
-
   listener {
     address               = "0.0.0.0:51893"
     protocol              = "tcp"
@@ -15,11 +14,6 @@ loki.source.syslog "local" {
       component = "loki.source.syslog"
       protocol  = "tcp"
     }
-    # tls_config opcional em redes não confiáveis:
-    # tls_config {
-    #   cert_file = "/etc/alloy/tls/server.crt"
-    #   key_file  = "/etc/alloy/tls/server.key"
-    # }
   }
 
   listener {
@@ -32,11 +26,9 @@ loki.source.syslog "local" {
       component = "loki.source.syslog"
       protocol  = "udp"
     }
-    # Opcional: rfc3164_default_to_current_year = true
   }
 
   forward_to    = [loki.write.local.receiver]
-
   relabel_rules = loki.relabel.syslog_all.rules + discovery.relabel.syslog.rules
 }
 
