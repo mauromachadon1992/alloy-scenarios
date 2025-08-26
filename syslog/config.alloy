@@ -15,7 +15,7 @@ loki.source.syslog "local" {
       protocol  = "tcp"
     }
   }
-
+  
   listener {
     address               = "0.0.0.0:51898"
     protocol              = "udp"
@@ -27,9 +27,9 @@ loki.source.syslog "local" {
       protocol  = "udp"
     }
   }
-
+  
   forward_to    = [loki.write.local.receiver]
-  relabel_rules = loki.relabel.syslog_all.rules + discovery.relabel.syslog.rules
+  relabel_rules = loki.relabel.syslog_all.rules
 }
 
 loki.relabel "syslog_all" {
@@ -37,55 +37,51 @@ loki.relabel "syslog_all" {
     action = "labelmap"
     regex  = "__syslog_(.+)"
   }
-}
-
-loki.write "local" {
-  endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
-  }
-}
-
-discovery.relabel "syslog" {
-  targets = []
-
+  
   rule {
     source_labels = ["__syslog_message_hostname"]
     target_label  = "host"
   }
-
+  
   rule {
     source_labels = ["__syslog_message_app_name"]
     target_label  = "application"
   }
-
+  
   rule {
     source_labels = ["__syslog_message_hostname"]
     regex         = ".*olt.*|.*OLT.*"
     target_label  = "device_type"
     replacement   = "olt"
   }
-
+  
   rule {
     source_labels = ["__syslog_message_hostname"]
     regex         = ".*switch.*|.*datacom.*|.*SWITCH.*"
     target_label  = "device_type"
     replacement   = "switch"
   }
-
+  
   rule {
     source_labels = ["__syslog_message_hostname"]
     regex         = ".*mikrotik.*|.*routeros.*|.*MIKROTIK.*"
     target_label  = "device_type"
     replacement   = "mikrotik"
   }
-
+  
   rule {
     source_labels = ["__syslog_message_facility"]
     target_label  = "facility"
   }
-
+  
   rule {
     source_labels = ["__syslog_message_severity"]
     target_label  = "severity"
+  }
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
   }
 }
