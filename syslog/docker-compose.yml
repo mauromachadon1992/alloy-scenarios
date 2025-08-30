@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   rsyslog:
-    image: rsyslog/syslog_appliance_alpine:latest
+    image: rsyslog/rsyslog_dev_base_debian
     container_name: rsyslog
     ports:
       - "514:514/udp"     # Standard syslog UDP port
