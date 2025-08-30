@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   rsyslog:
-    image: docker pull rsyslog/rsyslog_dev_base_debian:13
+    image: rsyslog/rsyslog-collector:latest
     container_name: rsyslog
     ports:
       - "514:514/udp"     # Standard syslog UDP port
