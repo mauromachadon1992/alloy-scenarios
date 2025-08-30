@@ -8,7 +8,9 @@ services:
       - "514:514/udp"     # Standard syslog UDP port
       - "514:514/tcp"     # Standard syslog TCP port (if needed)
     volumes:
-      - ./rsyslog.conf:/etc/rsyslog.conf    # Custom rsyslog configuration
+      - ./rsyslog-queues:/var/lib/rsyslog 
+      - ./rsyslog.conf:/etc/rsyslog.conf
+      - ./rsyslog.d:/etc/rsyslog.d
     depends_on:
       - alloy
 
@@ -21,7 +23,7 @@ services:
     volumes:
       - ./config.alloy:/etc/alloy/config.alloy
       - ./logs:/tmp/app-logs/
-    command: run --server.http.listen-addr=0.0.0.0:12345 --stability.level=experimental  --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 --stability.level=generally-available  --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
     depends_on:
       - loki
 
